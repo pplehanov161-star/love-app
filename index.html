@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Мы вдвоём</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #fff7f8);
+    --card: var(--tg-theme-secondary-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #2b1d22);
+    --hint: var(--tg-theme-hint-color, #9a8a90);
+    --accent: #e8466e;
+    --accent-soft: rgba(232, 70, 110, .14);
+    --free-me: #3aa6ff;
+    --free-partner: #b06cff;
+    --line: rgba(127, 127, 127, .18);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { padding: 0 16px 96px; min-height: 100vh; }
+  h1, h2, h3 { margin: 0; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  input, textarea, select {
+    font: inherit; color: var(--text); background: var(--bg); width: 100%;
+    border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  label { display: block; font-size: 13px; color: var(--hint); margin: 12px 0 6px; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 22px 0 14px; }
+  .hero .names { font-size: 20px; font-weight: 700; }
+  .hero .heart { color: var(--accent); display: inline-block; animation: beat 1.6s infinite; }
+  .hero .count { margin-top: 6px; color: var(--hint); }
+  .hero .count b { color: var(--accent); font-size: 17px; }
+  @keyframes beat { 0%,100% { transform: scale(1); } 15% { transform: scale(1.25); } 30% { transform: scale(1); } }
+
+  .card { background: var(--card); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+  .section-title { display: flex; justify-content: space-between; align-items: center; margin: 18px 2px 10px; }
+  .section-title h3 { font-size: 16px; }
+  .btn { background: var(--accent); color: #fff; border-radius: 12px; padding: 12px 16px; font-weight: 600; width: 100%; }
+  .btn.ghost { background: var(--accent-soft); color: var(--accent); }
+  .btn.small { width: auto; padding: 7px 12px; font-size: 14px; }
+  .btn.danger { background: transparent; color: #e5484d; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .muted { color: var(--hint); font-size: 13px; }
+  .empty { text-align: center; color: var(--hint); padding: 18px 8px; }
+
+  /* Banner */
+  .banner { background: linear-gradient(135deg, #ff7a9a, #e8466e); color: #fff; border-radius: var(--radius);
+    padding: 12px 14px; margin-bottom: 12px; display: flex; gap: 10px; align-items: center; }
+  .banner .emoji { font-size: 26px; }
+
+  /* Calendar */
+  .cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .cal-head button { width: 36px; height: 36px; border-radius: 50%; font-size: 18px; }
+  .cal-head button:active { background: var(--accent-soft); }
+  .cal-head .title { font-weight: 700; text-transform: capitalize; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .dow { text-align: center; font-size: 12px; color: var(--hint); padding: 4px 0; }
+  .day { aspect-ratio: 1; border-radius: 12px; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; position: relative; font-size: 15px; }
+  .day.other { opacity: .3; }
+  .day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .day.selected { background: var(--accent); color: #fff; }
+  .day.meet:not(.selected) { background: var(--accent-soft); font-weight: 700; }
+  .day .dots { display: flex; gap: 3px; height: 6px; margin-top: 2px; }
+  .day .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .day .ann { position: absolute; top: 1px; right: 3px; font-size: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--hint); }
+  .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 5px; background: var(--c); }
+
+  /* Items */
+  .item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--line); }
+  .item:first-child { border-top: 0; padding-top: 2px; }
+  .item .icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-size: 19px;
+    background: var(--accent-soft); flex-shrink: 0; }
+  .item .body { flex: 1; min-width: 0; }
+  .item .t { font-weight: 600; }
+  .item .s { color: var(--hint); font-size: 13px; margin-top: 2px; word-wrap: break-word; }
+  .item a { color: var(--accent); text-decoration: none; }
+  .item .badge { font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { padding: 8px 12px; border-radius: 20px; background: var(--bg); border: 1px solid var(--line); font-size: 14px; }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: var(--card); border-radius: 14px; padding: 12px 6px; text-align: center; }
+  .stat b { display: block; font-size: 20px; color: var(--accent); }
+  .stat span { font-size: 12px; color: var(--hint); }
+
+  /* Tabbar */
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
+    border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 5; }
+  .tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 11px; color: var(--hint); padding: 4px 0; }
+  .tabbar button .i { font-size: 21px; filter: grayscale(1); opacity: .6; }
+  .tabbar button.on { color: var(--accent); }
+  .tabbar button.on .i { filter: none; opacity: 1; }
+
+  /* Sheet */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 10; display: none; }
+  .overlay.show { display: block; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-radius: 20px 20px 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); max-height: 88vh; overflow-y: auto;
+    z-index: 11; transform: translateY(105%); transition: transform .25s ease; }
+  .sheet.show { transform: none; }
+  .sheet h2 { font-size: 18px; margin-bottom: 4px; }
+  .sheet .actions { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+
+  .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: rgba(30,30,30,.92);
+    color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 20; opacity: 0;
+    transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<header class="hero" id="hero"></header>
+<div id="banners"></div>
+
+<!-- КАЛЕНДАРЬ -->
+<section id="tab-calendar">
+  <div class="card">
+    <div class="cal-head">
+      <button id="prevMonth" aria-label="Предыдущий месяц">‹</button>
+      <div class="title" id="monthTitle"></div>
+      <button id="nextMonth" aria-label="Следующий месяц">›</button>
+    </div>
+    <div class="grid" id="calGrid"></div>
+    <div class="legend">
+      <span style="--c: var(--accent)">Встреча</span>
+      <span style="--c: var(--free-me)" id="legendMe">Я свободен</span>
+      <span style="--c: var(--free-partner)" id="legendPartner">Партнёр свободен</span>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <h3 id="dayTitle"></h3>
+    <button class="btn small" id="addForDay">+ Добавить</button>
+  </div>
+  <div class="card" id="dayList"></div>
+
+  <div class="section-title"><h3>Ближайшие встречи</h3></div>
+  <div class="card" id="upcomingList"></div>
+</section>
+
+<!-- ГОДОВЩИНЫ -->
+<section id="tab-dates" hidden>
+  <div class="stats" id="stats"></div>
+  <div class="section-title">
+    <h3>Наши даты</h3>
+    <button class="btn small" id="addAnn">+ Дата</button>
+  </div>
+  <div class="card" id="annList"></div>
+  <div class="section-title"><h3>Круглые даты</h3></div>
+  <div class="card" id="milestones"></div>
+</section>
+
+<!-- МЫ / НАСТРОЙКИ -->
+<section id="tab-us" hidden>
+  <div class="card">
+    <label>Твоё имя</label>
+    <input id="meName" placeholder="Например, Петя">
+    <label>Имя твоей половинки</label>
+    <input id="partnerName" placeholder="Например, Маша">
+    <label>Когда вы начали встречаться</label>
+    <input id="startDate" type="date">
+    <div style="height:14px"></div>
+    <button class="btn" id="saveUs">Сохранить</button>
+  </div>
+
+  <div class="section-title"><h3>Синхронизация с партнёром</h3></div>
+  <div class="card">
+    <p class="muted" style="margin-top:0">Отправь половинке код — она вставит его у себя, и ваши календари объединятся.
+      Повторяйте, когда добавляете что-то новое.</p>
+    <div class="row">
+      <button class="btn" id="sendCode">Отправить код</button>
+      <button class="btn ghost" id="copyCode">Скопировать</button>
+    </div>
+    <label>Код от партнёра</label>
+    <textarea id="importCode" rows="3" placeholder="Вставь сюда код"></textarea>
+    <div style="height:10px"></div>
+    <button class="btn ghost" id="doImport">Объединить</button>
+  </div>
+
+  <div class="section-title"><h3>Напоминания</h3></div>
+  <div class="card">
+    <p class="muted" style="margin-top:0">Скачай файл и открой его — все ваши годовщины и встречи появятся в календаре
+      телефона с напоминанием за день.</p>
+    <button class="btn ghost" id="exportIcs">Добавить в календарь телефона</button>
+  </div>
+</section>
+
+<nav class="tabbar">
+  <button data-tab="calendar" class="on"><span class="i">📅</span>Календарь</button>
+  <button data-tab="dates"><span class="i">💞</span>Годовщины</button>
+  <button data-tab="us"><span class="i">👩‍❤️‍👨</span>Мы</button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  // ---------- Хранилище: Telegram CloudStorage (синхронизируется между устройствами) + localStorage ----------
+  const KEY = 'couple_v1';
+  const CHUNK = 3500;
+  const hasCloud = !!(tg && tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9'));
+
+  const cloud = {
+    get: keys => new Promise(r => tg.CloudStorage.getItems(keys, (e, v) => r(e ? {} : v))),
+    set: (k, v) => new Promise(r => tg.CloudStorage.setItem(k, v, () => r())),
+  };
+
+  async function loadRaw() {
+    let local = null;
+    try { local = localStorage.getItem(KEY); } catch (e) {}
+    if (!hasCloud) return local;
+    try {
+      const meta = await cloud.get([KEY + '_n']);
+      const n = parseInt(meta[KEY + '_n'] || '0', 10);
+      if (!n) return local;
+      const keys = Array.from({ length: n }, (_, i) => KEY + '_' + i);
+      const parts = await cloud.get(keys);
+      return keys.map(k => parts[k] || '').join('');
+    } catch (e) { return local; }
+  }
+
+  let saveTimer;
+  function save() {
+    state.updatedAt = Date.now();
+    const raw = JSON.stringify(state);
+    try { localStorage.setItem(KEY, raw); } catch (e) {}
+    if (!hasCloud) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      const n = Math.ceil(raw.length / CHUNK);
+      for (let i = 0; i < n; i++) await cloud.set(KEY + '_' + i, raw.slice(i * CHUNK, (i + 1) * CHUNK));
+      await cloud.set(KEY + '_n', String(n));
+    }, 400);
+  }
+
+  const blank = () => ({ meName: '', partnerName: '', startDate: '', events: [], anniversaries: [], deleted: [], updatedAt: 0 });
+  let state = blank();
+
+  // ---------- Утилиты ----------
+  const $ = id => document.getElementById(id);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const daysBetween = (a, b) => Math.round((b - a) / 86400000);
+  const esc = s => String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+  const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const DOW = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const fmt = s => { const d = parse(s); return d.getDate() + ' ' + MONTHS_GEN[d.getMonth()]; };
+  const fmtFull = s => { const d = parse(s); return fmt(s) + ' ' + d.getFullYear(); };
+  const plural = (n, a, b, c) => { const m = n % 100, k = n % 10;
+    return (m > 10 && m < 20) ? c : k === 1 ? a : (k > 1 && k < 5) ? b : c; };
+  const days = n => n + ' ' + plural(n, 'день', 'дня', 'дней');
+  const haptic = t => { try { tg.HapticFeedback.notificationOccurred(t || 'success'); } catch (e) {} };
+
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  const meLabel = () => state.meName || 'Я';
+  const partnerLabel = () => state.partnerName || 'Половинка';
+
+  const TYPES = {
+    meet:    { icon: '💘', name: 'Встреча' },
+    free_me: { icon: '🙋', name: () => meLabel() + ' свободен(на)' },
+    free_partner: { icon: '💜', name: () => partnerLabel() + ' свободен(на)' },
+  };
+  const typeName = t => { const n = TYPES[t].name; return typeof n === 'function' ? n() : n; };
+
+  // Ближайшее повторение ежегодной даты
+  function nextOccurrence(dateStr, yearly) {
+    const t = today(), d = parse(dateStr);
+    if (!yearly) return d;
+    let n = new Date(t.getFullYear(), d.getMonth(), d.getDate());
+    if (n < t) n = new Date(t.getFullYear() + 1, d.getMonth(), d.getDate());
+    return n;
+  }
+
+  function allAnniversaries() {
+    const list = state.anniversaries.slice();
+    if (state.startDate) list.unshift({ id: '_start', title: 'Годовщина отношений', date: state.startDate, yearly: true, emoji: '❤️', builtin: true });
+    return list;
+  }
+
+  // ---------- Шапка и баннеры ----------
+  function renderHero() {
+    const names = state.meName || state.partnerName
+      ? esc(meLabel()) + ' <span class="heart">❤</span> ' + esc(partnerLabel())
+      : 'Мы вдвоём <span class="heart">❤</span>';
+    let count = '<span class="muted">Укажи дату начала отношений во вкладке «Мы»</span>';
+    if (state.startDate) {
+      const n = daysBetween(parse(state.startDate), today());
+      count = n >= 0 ? 'Вместе уже <b>' + days(n) + '</b>' : 'До начала отношений ' + days(-n);
+    }
+    $('hero').innerHTML = '<div class="names">' + names + '</div><div class="count">' + count + '</div>';
+  }
+
+  function renderBanners() {
+    const t = today(), out = [];
+    allAnniversaries().forEach(a => {
+      const n = nextOccurrence(a.date, a.yearly), d = daysBetween(t, n);
+      if (d >= 0 && d <= 7) {
+        const years = a.yearly ? n.getFullYear() - parse(a.date).getFullYear() : 0;
+        const what = esc(a.title) + (years > 0 ? ' — ' + years + ' ' + plural(years, 'год', 'года', 'лет') : '');
+        out.push('<div class="banner"><div class="emoji">' + (a.emoji || '🎉') + '</div><div>' +
+          (d === 0 ? '<b>Сегодня!</b> ' : 'Через <b>' + days(d) + '</b>: ') + what + '</div></div>');
+      }
+    });
+    state.events.filter(e => e.type === 'meet' && daysBetween(t, parse(e.date)) === 0).forEach(e => {
+      out.push('<div class="banner"><div class="emoji">💘</div><div><b>Сегодня встреча:</b> ' + esc(e.title) +
+        (e.time ? ' в ' + esc(e.time) : '') + '</div></div>');
+    });
+    $('banners').innerHTML = out.join('');
+  }
+
+  // ---------- Календарь ----------
+  let view = today(); view.setDate(1);
+  let selected = iso(today());
+
+  function renderCalendar() {
+    $('monthTitle').textContent = MONTHS[view.getMonth()] + ' ' + view.getFullYear();
+    $('legendMe').textContent = meLabel() + ' свободен(на)';
+    $('legendPartner').textContent = partnerLabel() + ' свободен(на)';
+
+    const byDate = {};
+    state.events.forEach(e => (byDate[e.date] = byDate[e.date] || []).push(e));
+    const annDays = new Set();
+    allAnniversaries().forEach(a => {
+      const d = parse(a.date);
+      if (a.yearly ? d.getMonth() === view.getMonth() : (d.getMonth() === view.getMonth() && d.getFullYear() === view.getFullYear()))
+        annDays.add(d.getDate());
+    });
+
+    const first = new Date(view);
+    const offset = (first.getDay() + 6) % 7;
+    const start = new Date(first); start.setDate(1 - offset);
+    const todayIso = iso(today());
+    let html = DOW.map(d => '<div class="dow">' + d + '</div>').join('');
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      if (i >= 35 && d.getMonth() !== view.getMonth()) break;
+      const key = iso(d), evs = byDate[key] || [];
+      const inMonth = d.getMonth() === view.getMonth();
+      const cls = ['day', inMonth ? '' : 'other', key === todayIso ? 'today' : '', key === selected ? 'selected' : '',
+        evs.some(e => e.type === 'meet') ? 'meet' : ''].join(' ');
+      const dots = ['meet', 'free_me', 'free_partner'].filter(t => evs.some(e => e.type === t))
+        .map(t => '<span class="dot" style="background:' + (t === 'meet' ? 'var(--accent)' : t === 'free_me' ? 'var(--free-me)' : 'var(--free-partner)') + '"></span>').join('');
+      html += '<button class="' + cls + '" data-date="' + key + '">' + d.getDate() +
+        '<span class="dots">' + dots + '</span>' + (inMonth && annDays.has(d.getDate()) ? '<span class="ann">❤️</span>' : '') + '</button>';
+    }
+    $('calGrid').innerHTML = html;
+    renderDay();
+    renderUpcoming();
+  }
+
+  function eventRow(e, showDate) {
+    const place = e.place ? '📍 <a href="https://yandex.ru/maps/?text=' + encodeURIComponent(e.place) + '" data-ext>' + esc(e.place) + '</a>' : '';
+    const sub = [showDate ? fmt(e.date) : '', e.time ? '🕐 ' + esc(e.time) : '', place].filter(Boolean).join(' · ');
+    return '<div class="item" data-edit="' + e.id + '"><div class="icon">' + TYPES[e.type].icon + '</div><div class="body">' +
+      '<div class="t">' + esc(e.title || typeName(e.type)) + '</div>' +
+      (sub ? '<div class="s">' + sub + '</div>' : '') +
+      (e.note ? '<div class="s">' + esc(e.note) + '</div>' : '') + '</div></div>';
+  }
+
+  function renderDay() {
+    $('dayTitle').textContent = fmt(selected) + (selected === iso(today()) ? ', сегодня' : '');
+    const evs = state.events.filter(e => e.date === selected).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    const d = parse(selected);
+    const anns = allAnniversaries().filter(a => { const x = parse(a.date);
+      return x.getMonth() === d.getMonth() && x.getDate() === d.getDate() && (a.yearly || x.getFullYear() === d.getFullYear()); });
+    let html = anns.map(a => '<div class="item"><div class="icon">' + (a.emoji || '🎉') + '</div><div class="body"><div class="t">' +
+      esc(a.title) + '</div><div class="s">Особенная дата</div></div></div>').join('');
+    html += evs.map(e => eventRow(e, false)).join('');
+    $('dayList').innerHTML = html || '<div class="empty">Пока пусто. Отметь, что ты свободен(на), или запланируй встречу 💌</div>';
+  }
+
+  function renderUpcoming() {
+    const t = iso(today());
+    const list = state.events.filter(e => e.type === 'meet' && e.date >= t)
+      .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''))).slice(0, 5);
+    // Дни, когда свободны оба — подсказка
+    const me = new Set(state.events.filter(e => e.type === 'free_me' && e.date >= t).map(e => e.date));
+    const both = [...new Set(state.events.filter(e => e.type === 'free_partner' && me.has(e.date)).map(e => e.date))]
+      .filter(d => !state.events.some(e => e.type === 'meet' && e.date === d)).sort().slice(0, 3);
+    let html = both.map(d => '<div class="item" data-plan="' + d + '"><div class="icon">✨</div><div class="body"><div class="t">' +
+      fmt(d) + ' — вы оба свободны!</div><div class="s">Нажми, чтобы запланировать встречу</div></div></div>').join('');
+    html += list.map(e => eventRow(e, true)).join('');
+    $('upcomingList').innerHTML = html || '<div class="empty">Встреч пока нет. Самое время что-нибудь придумать 🌹</div>';
+  }
+
+  // ---------- Годовщины ----------
+  function renderDates() {
+    const t = today();
+    let statsHtml = '';
+    if (state.startDate) {
+      const s = parse(state.startDate), total = daysBetween(s, t);
+      let months = (t.getFullYear() - s.getFullYear()) * 12 + t.getMonth() - s.getMonth();
+      if (t.getDate() < s.getDate()) months--;
+      const meets = state.events.filter(e => e.type === 'meet' && e.date <= iso(t)).length;
+      statsHtml = '<div class="stat"><b>' + Math.max(total, 0) + '</b><span>' + plural(total, 'день', 'дня', 'дней') + ' вместе</span></div>' +
+        '<div class="stat"><b>' + Math.max(months, 0) + '</b><span>' + plural(months, 'месяц', 'месяца', 'месяцев') + '</span></div>' +
+        '<div class="stat"><b>' + meets + '</b><span>' + plural(meets, 'встреча', 'встречи', 'встреч') + '</span></div>';
+    }
+    $('stats').innerHTML = statsHtml;
+
+    const list = allAnniversaries().map(a => ({ a, n: nextOccurrence(a.date, a.yearly) }))
+      .sort((x, y) => x.n - y.n);
+    $('annList').innerHTML = list.map(({ a, n }) => {
+      const d = daysBetween(t, n);
+      const years = a.yearly ? n.getFullYear() - parse(a.date).getFullYear() : 0;
+      const badge = d < 0 ? 'прошло' : d === 0 ? 'сегодня 🎉' : 'через ' + days(d);
+      return '<div class="item" ' + (a.builtin ? 'data-goto-us' : 'data-ann="' + a.id + '"') + '><div class="icon">' + (a.emoji || '🎉') +
+        '</div><div class="body"><div class="t">' + esc(a.title) + '</div><div class="s">' + fmtFull(a.date) +
+        (a.yearly && years > 0 && d >= 0 ? ' · будет ' + years + ' ' + plural(years, 'год', 'года', 'лет') : '') +
+        (a.yearly ? ' · каждый год' : '') + '</div></div><div class="badge">' + badge + '</div></div>';
+    }).join('') || '<div class="empty">Добавь дату начала отношений во вкладке «Мы» и другие важные дни: первый поцелуй, первое свидание, дни рождения 🎂</div>';
+
+    // Круглые даты: 100, 200, 365, 500, 1000... дней и каждые полгода
+    let ms = '';
+    if (state.startDate) {
+      const s = parse(state.startDate), passed = daysBetween(s, t);
+      const marks = [100, 200, 300, 365, 500, 730, 777, 1000, 1095, 1500, 2000, 2500, 3000, 5000, 10000];
+      const next = marks.filter(m => m >= passed).slice(0, 4);
+      ms = next.map(m => { const d = new Date(s); d.setDate(d.getDate() + m);
+        const left = m - passed;
+        return '<div class="item"><div class="icon">' + (m === 1000 ? '💎' : m % 365 === 0 ? '🥂' : '⭐') +
+          '</div><div class="body"><div class="t">' + days(m) + ' вместе</div><div class="s">' + fmtFull(iso(d)) +
+          '</div></div><div class="badge">' + (left === 0 ? 'сегодня 🎉' : 'через ' + days(left)) + '</div></div>'; }).join('');
+    }
+    $('milestones').innerHTML = ms || '<div class="empty">Появятся, когда укажешь дату начала отношений</div>';
+  }
+
+  // ---------- Вкладка «Мы» ----------
+  function renderUs() {
+    $('meName').value = state.meName; $('partnerName').value = state.partnerName; $('startDate').value = state.startDate;
+  }
+
+  function renderAll() { renderHero(); renderBanners(); renderCalendar(); renderDates(); renderUs(); }
+
+  // ---------- Нижний лист (формы) ----------
+  function openSheet(html) {
+    $('sheet').innerHTML = html; $('overlay').classList.add('show'); $('sheet').classList.add('show');
+    if (tg && tg.BackButton) tg.BackButton.show();
+  }
+  function closeSheet() {
+    $('overlay').classList.remove('show'); $('sheet').classList.remove('show');
+    if (tg && tg.BackButton) tg.BackButton.hide();
+  }
+  $('overlay').onclick = closeSheet;
+  if (tg && tg.BackButton) tg.BackButton.onClick(closeSheet);
+
+  function eventForm(date, existing) {
+    const e = existing || { type: 'meet', date, time: '', title: '', place: '', note: '' };
+    openSheet(
+      '<h2>' + (existing ? 'Изменить' : 'Новая запись') + '</h2>' +
+      '<label>Что это</label><div class="chips" id="typeChips">' +
+      Object.keys(TYPES).map(t => '<button class="chip' + (t === e.type ? ' on' : '') + '" data-type="' + t + '">' +
+        TYPES[t].icon + ' ' + esc(typeName(t)) + '</button>').join('') + '</div>' +
+      '<div class="row"><div><label>Дата</label><input type="date" id="fDate" value="' + e.date + '"></div>' +
+      '<div><label>Время</label><input type="time" id="fTime" value="' + esc(e.time) + '"></div></div>' +
+      '<div id="meetFields"><label>Название</label><input id="fTitle" placeholder="Кино, прогулка, ужин…" value="' + esc(e.title) + '">' +
+      '<label>Место встречи</label><input id="fPlace" placeholder="Адрес или название места" value="' + esc(e.place) + '"></div>' +
+      '<label>Заметка</label><textarea id="fNote" rows="2" placeholder="Взять зонтик, забронировать столик…">' + esc(e.note) + '</textarea>' +
+      '<div class="actions"><button class="btn" id="fSave">Сохранить</button>' +
+      (existing ? '<button class="btn ghost" id="fShare">Отправить половинке</button><button class="btn danger" id="fDel">Удалить</button>' : '') + '</div>'
+    );
+    let type = e.type;
+    const toggle = () => { $('meetFields').hidden = type !== 'meet'; };
+    toggle();
+    $('typeChips').onclick = ev => { const b = ev.target.closest('[data-type]'); if (!b) return;
+      type = b.dataset.type; [...$('typeChips').children].forEach(c => c.classList.toggle('on', c === b)); toggle(); };
+    $('fSave').onclick = () => {
+      const date = $('fDate').value; if (!date) return toast('Выбери дату');
+      const data = { type, date, time: $('fTime').value, title: type === 'meet' ? $('fTitle').value.trim() : '',
+        place: type === 'meet' ? $('fPlace').value.trim() : '', note: $('fNote').value.trim(), updatedAt: Date.now() };
+      if (existing) Object.assign(existing, data); else state.events.push(Object.assign({ id: uid() }, data));
+      selected = date; const d = parse(date); view = new Date(d.getFullYear(), d.getMonth(), 1);
+      save(); closeSheet(); renderAll(); haptic(); toast('Сохранено 💗');
+    };
+    if (existing) {
+      $('fDel').onclick = () => confirmAsk('Удалить запись?', () => {
+        state.events = state.events.filter(x => x.id !== existing.id); state.deleted.push(existing.id);
+        save(); closeSheet(); renderAll(); haptic('warning');
+      });
+      $('fShare').onclick = () => {
+        const text = TYPES[existing.type].icon + ' ' + (existing.title || typeName(existing.type)) + '\n📅 ' + fmtFull(existing.date) +
+          (existing.time ? ', ' + existing.time : '') + (existing.place ? '\n📍 ' + existing.place : '') + (existing.note ? '\n📝 ' + existing.note : '');
+        shareText(text);
+      };
+    }
+  }
+
+  const EMOJIS = ['❤️', '💋', '🌹', '🎂', '💍', '✈️', '🏠', '🐾', '🎉'];
+  function annForm(existing) {
+    const a = existing || { title: '', date: iso(today()), yearly: true, emoji: '❤️' };
+    openSheet(
+      '<h2>' + (existing ? 'Изменить дату' : 'Новая важная дата') + '</h2>' +
+      '<label>Название</label><input id="aTitle" placeholder="Первый поцелуй, день рождения…" value="' + esc(a.title) + '">' +
+      '<label>Дата</label><input type="date" id="aDate" value="' + a.date + '">' +
+      '<label>Значок</label><div class="chips" id="emojiChips">' +
+      EMOJIS.map(x => '<button class="chip' + (x === a.emoji ? ' on' : '') + '" data-e="' + x + '">' + x + '</button>').join('') + '</div>' +
+      '<label>Повторять</label><div class="chips" id="yearChips">' +
+      '<button class="chip' + (a.yearly ? ' on' : '') + '" data-y="1">Каждый год</button>' +
+      '<button class="chip' + (!a.yearly ? ' on' : '') + '" data-y="0">Один раз</button></div>' +
+      '<div class="actions"><button class="btn" id="aSave">Сохранить</button>' +
+      (existing ? '<button class="btn danger" id="aDel">Удалить</button>' : '') + '</div>'
+    );
+    let emoji = a.emoji, yearly = a.yearly;
+    $('emojiChips').onclick = ev => { const b = ev.target.closest('[data-e]'); if (!b) return; emoji = b.dataset.e;
+      [...$('emojiChips').children].forEach(c => c.classList.toggle('on', c === b)); };
+    $('yearChips').onclick = ev => { const b = ev.target.closest('[data-y]'); if (!b) return; yearly = b.dataset.y === '1';
+      [...$('yearChips').children].forEach(c => c.classList.toggle('on', c === b)); };
+    $('aSave').onclick = () => {
+      const title = $('aTitle').value.trim(), date = $('aDate').value;
+      if (!title || !date) return toast('Заполни название и дату');
+      const data = { title, date, emoji, yearly, updatedAt: Date.now() };
+      if (existing) Object.assign(existing, data); else state.anniversaries.push(Object.assign({ id: uid() }, data));
+      save(); closeSheet(); renderAll(); haptic(); toast('Сохранено 💗');
+    };
+    if (existing) $('aDel').onclick = () => confirmAsk('Удалить дату?', () => {
+      state.anniversaries = state.anniversaries.filter(x => x.id !== existing.id); state.deleted.push(existing.id);
+      save(); closeSheet(); renderAll(); haptic('warning');
+    });
+  }
+
+  function confirmAsk(msg, cb) {
+    if (tg && tg.showConfirm && tg.isVersionAtLeast('6.2')) tg.showConfirm(msg, ok => ok && cb());
+    else if (confirm(msg)) cb();
+  }
+
+  function shareText(text, url) {
+    const link = 'https://t.me/share/url?url=' + encodeURIComponent(url || ' ') + '&text=' + encodeURIComponent(text);
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(link); else window.open(link, '_blank');
+  }
+
+  // ---------- Синхронизация через код ----------
+  // Партнёр видит «меня» как своего партнёра, поэтому типы free_me/free_partner и имена меняются местами.
+  function exportCode() {
+    const payload = { v: 1, meName: state.meName, partnerName: state.partnerName, startDate: state.startDate,
+      events: state.events, anniversaries: state.anniversaries, deleted: state.deleted };
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+    return 'LOVE' + btoa(bin);
+  }
+
+  function importCode(code) {
+    code = code.trim().replace(/\s+/g, '');
+    const i = code.indexOf('LOVE'); if (i < 0) throw new Error('bad');
+    const bin = atob(code.slice(i + 4));
+    const p = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+    const swap = { free_me: 'free_partner', free_partner: 'free_me', meet: 'meet' };
+    const deleted = new Set([...(state.deleted || []), ...(p.deleted || [])]);
+    const merge = (mine, theirs, map) => {
+      const byId = new Map(mine.map(x => [x.id, x]));
+      theirs.forEach(x => { const y = map ? map(x) : x; const cur = byId.get(y.id);
+        if (!cur || (y.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(y.id, y); });
+      return [...byId.values()].filter(x => !deleted.has(x.id));
+    };
+    state.events = merge(state.events, p.events || [], x => Object.assign({}, x, { type: swap[x.type] || x.type }));
+    state.anniversaries = merge(state.anniversaries, p.anniversaries || []);
+    state.deleted = [...deleted];
+    if (!state.startDate && p.startDate) state.startDate = p.startDate;
+    if (!state.meName && p.partnerName) state.meName = p.partnerName;
+    if (!state.partnerName && p.meName) state.partnerName = p.meName;
+  }
+
+  $('sendCode').onclick = () => shareText('💞 Код для нашего календаря — открой приложение, вкладка «Мы» → «Код от партнёра»:\n\n' + exportCode());
+  $('copyCode').onclick = async () => {
+    try { await navigator.clipboard.writeText(exportCode()); toast('Код скопирован'); }
+    catch (e) { $('importCode').value = exportCode(); $('importCode').select(); toast('Скопируй код из поля ниже'); }
+  };
+  $('doImport').onclick = () => {
+    try { importCode($('importCode').value); save(); renderAll(); $('importCode').value = ''; haptic(); toast('Календари объединены 💞'); }
+    catch (e) { haptic('error'); toast('Не получилось прочитать код'); }
+  };
+
+  // ---------- Экспорт в календарь телефона (.ics) ----------
+  $('exportIcs').onclick = () => {
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const icsEsc = s => String(s || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+    const ev = [];
+    const alarm = 'BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Напоминание\r\nTRIGGER:-P1D\r\nEND:VALARM';
+    allAnniversaries().forEach(a => {
+      const d = a.date.replace(/-/g, '');
+      ev.push('BEGIN:VEVENT\r\nUID:' + a.id + '@couple\r\nDTSTAMP:' + stamp + '\r\nDTSTART;VALUE=DATE:' + d +
+        '\r\nSUMMARY:' + icsEsc((a.emoji || '') + ' ' + a.title) + (a.yearly ? '\r\nRRULE:FREQ=YEARLY' : '') + '\r\n' + alarm + '\r\nEND:VEVENT');
+    });
+    state.events.filter(e => e.type === 'meet' && e.date >= iso(today())).forEach(e => {
+      const d = e.date.replace(/-/g, '');
+      const start = e.time ? 'DTSTART:' + d + 'T' + e.time.replace(':', '') + '00' : 'DTSTART;VALUE=DATE:' + d;
+      ev.push('BEGIN:VEVENT\r\nUID:' + e.id + '@couple\r\nDTSTAMP:' + stamp + '\r\n' + start + '\r\nSUMMARY:' +
+        icsEsc('💘 ' + (e.title || 'Встреча')) + (e.place ? '\r\nLOCATION:' + icsEsc(e.place) : '') +
+        (e.note ? '\r\nDESCRIPTION:' + icsEsc(e.note) : '') + '\r\n' + alarm + '\r\nEND:VEVENT');
+    });
+    if (!ev.length) return toast('Пока нечего добавлять');
+    const ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Couple//RU\r\n' + ev.join('\r\n') + '\r\nEND:VCALENDAR\r\n';
+    const url = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+    const a = document.createElement('a'); a.href = url; a.download = 'nashi-daty.ics'; document.body.appendChild(a); a.click(); a.remove();
+  };
+
+  // ---------- События интерфейса ----------
+  $('prevMonth').onclick = () => { view.setMonth(view.getMonth() - 1); renderCalendar(); };
+  $('nextMonth').onclick = () => { view.setMonth(view.getMonth() + 1); renderCalendar(); };
+  $('calGrid').onclick = e => { const b = e.target.closest('[data-date]'); if (!b) return;
+    selected = b.dataset.date; const d = parse(selected);
+    if (d.getMonth() !== view.getMonth()) view = new Date(d.getFullYear(), d.getMonth(), 1);
+    try { tg.HapticFeedback.selectionChanged(); } catch (x) {}
+    renderCalendar(); };
+  $('addForDay').onclick = () => eventForm(selected);
+  $('addAnn').onclick = () => annForm();
+
+  document.body.addEventListener('click', e => {
+    const ext = e.target.closest('[data-ext]');
+    if (ext) { e.preventDefault(); e.stopPropagation(); if (tg && tg.openLink) tg.openLink(ext.href); else window.open(ext.href, '_blank'); return; }
+    const ed = e.target.closest('[data-edit]');
+    if (ed) return eventForm(null, state.events.find(x => x.id === ed.dataset.edit));
+    const pl = e.target.closest('[data-plan]');
+    if (pl) return eventForm(pl.dataset.plan);
+    const an = e.target.closest('[data-ann]');
+    if (an) return annForm(state.anniversaries.find(x => x.id === an.dataset.ann));
+    if (e.target.closest('[data-goto-us]')) return switchTab('us');
+  });
+
+  $('saveUs').onclick = () => {
+    state.meName = $('meName').value.trim(); state.partnerName = $('partnerName').value.trim(); state.startDate = $('startDate').value;
+    save(); renderAll(); haptic(); toast('Сохранено 💗');
+  };
+
+  function switchTab(name) {
+    ['calendar', 'dates', 'us'].forEach(t => $('tab-' + t).hidden = t !== name);
+    document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+    window.scrollTo(0, 0);
+  }
+  document.querySelector('.tabbar').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) switchTab(b.dataset.tab); };
+
+  // ---------- Старт ----------
+  loadRaw().then(raw => {
+    try { if (raw) state = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
+    if (!state.meName && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) state.meName = tg.initDataUnsafe.user.first_name || '';
+    renderAll();
+    if (!state.startDate) switchTab('us');
+  });
+})();
+</script>
+</body>
+</html>
