@@ -15,6 +15,7 @@
     --accent-soft: rgba(232, 70, 110, .14);
     --free-me: #3aa6ff;
     --free-partner: #b06cff;
+    --both: #2fbf71;
     --line: rgba(127, 127, 127, .18);
     --radius: 16px;
   }
@@ -71,6 +72,18 @@
   .day.meet:not(.selected) { background: var(--accent-soft); font-weight: 700; }
   .day .dots { display: flex; gap: 3px; height: 6px; margin-top: 2px; }
   .day .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .day.both:not(.selected) { box-shadow: inset 0 0 0 2px var(--both); }
+  .day.marking { outline: 1px dashed var(--line); }
+  .mark-hint { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft);
+    color: var(--accent); font-size: 14px; text-align: center; }
+  .quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .qbtn { background: var(--card); border-radius: 14px; padding: 10px 4px; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; font-size: 12px; line-height: 1.25; text-align: center; border: 2px solid transparent; }
+  .qbtn .ic { font-size: 20px; }
+  .qbtn small { color: var(--hint); font-size: 11px; }
+  .qbtn.on.free_me { border-color: var(--free-me); background: rgba(58, 166, 255, .12); }
+  .qbtn.on.free_partner { border-color: var(--free-partner); background: rgba(176, 108, 255, .12); }
+  .qbtn.on small { color: inherit; font-weight: 600; }
   .day .ann { position: absolute; top: 1px; right: 3px; font-size: 10px; }
   .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--hint); }
   .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
@@ -163,13 +176,19 @@
       <span style="--c: var(--accent)">Встреча</span>
       <span style="--c: var(--free-me)" id="legendMe">Я свободен</span>
       <span style="--c: var(--free-partner)" id="legendPartner">Партнёр свободен</span>
+      <span style="--c: var(--both)">Оба свободны</span>
+    </div>
+    <div class="mark-hint" id="markHint" hidden></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost small" data-mark="free_me" id="markMe"></button>
+      <button class="btn ghost small" data-mark="free_partner" id="markPartner"></button>
     </div>
   </div>
 
   <div class="section-title">
     <h3 id="dayTitle"></h3>
-    <button class="btn small" id="addForDay">+ Добавить</button>
   </div>
+  <div class="quick" id="quick"></div>
   <div class="card" id="dayList"></div>
 
   <div class="section-title"><h3>Ближайшие встречи</h3></div>
@@ -463,6 +482,7 @@
   // ---------- Календарь ----------
   let view = today(); view.setDate(1);
   let selected = iso(today());
+  let markMode = null; // 'free_me' | 'free_partner' — быстрая отметка свободных дней касанием
 
   function renderCalendar() {
     $('monthTitle').textContent = MONTHS[view.getMonth()] + ' ' + view.getFullYear();
@@ -488,14 +508,25 @@
       if (i >= 35 && d.getMonth() !== view.getMonth()) break;
       const key = iso(d), evs = byDate[key] || [];
       const inMonth = d.getMonth() === view.getMonth();
+      const both = evs.some(e => e.type === 'free_me') && evs.some(e => e.type === 'free_partner');
       const cls = ['day', inMonth ? '' : 'other', key === todayIso ? 'today' : '', key === selected ? 'selected' : '',
-        evs.some(e => e.type === 'meet') ? 'meet' : ''].join(' ');
+        evs.some(e => e.type === 'meet') ? 'meet' : '', both ? 'both' : '', markMode ? 'marking' : ''].join(' ');
       const dots = ['meet', 'free_me', 'free_partner'].filter(t => evs.some(e => e.type === t))
         .map(t => '<span class="dot" style="background:' + (t === 'meet' ? 'var(--accent)' : t === 'free_me' ? 'var(--free-me)' : 'var(--free-partner)') + '"></span>').join('');
       html += '<button class="' + cls + '" data-date="' + key + '">' + d.getDate() +
         '<span class="dots">' + dots + '</span>' + (inMonth && annDays.has(d.getDate()) ? '<span class="ann">❤️</span>' : '') + '</button>';
     }
     $('calGrid').innerHTML = html;
+
+    $('markMe').textContent = markMode === 'free_me' ? '✅ Готово' : '✋ Мои свободные дни';
+    $('markPartner').textContent = markMode === 'free_partner' ? '✅ Готово' : '✋ ' + partnerLabel() + ': свободные дни';
+    $('markMe').className = 'btn small' + (markMode === 'free_me' ? '' : ' ghost');
+    $('markPartner').className = 'btn small' + (markMode === 'free_partner' ? '' : ' ghost');
+    $('markMe').hidden = markMode === 'free_partner';
+    $('markPartner').hidden = markMode === 'free_me';
+    $('markHint').hidden = !markMode;
+    if (markMode) $('markHint').textContent = 'Нажимай на дни, когда ' + (markMode === 'free_me' ? meLabel() : partnerLabel()) +
+      ' может встретиться. Повторное нажатие снимает отметку.';
     renderDay();
     renderUpcoming();
   }
@@ -509,8 +540,24 @@
       (e.note ? '<div class="s">' + esc(e.note) + '</div>' : '') + '</div></div>';
   }
 
+  // Свободен / не свободен в выбранный день — одна запись на человека в день
+  function toggleFree(date, type) {
+    const ex = state.events.find(e => e.date === date && e.type === type);
+    if (ex) { state.events = state.events.filter(e => e !== ex); state.deleted.push(ex.id); }
+    else state.events.push({ id: uid(), type, date, time: '', title: '', place: '', note: '', updatedAt: Date.now() });
+    save();
+    try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
+    return !ex;
+  }
+
   function renderDay() {
     $('dayTitle').textContent = fmt(selected) + (selected === iso(today()) ? ', сегодня' : '');
+    const has = t => state.events.some(e => e.date === selected && e.type === t);
+    const qb = (t, icon, name) => '<button class="qbtn' + (has(t) ? ' on ' + t : '') + '" data-free="' + t + '"><span class="ic">' +
+      (has(t) ? '✅' : icon) + '</span>' + esc(name) + '<small>' + (has(t) ? 'свободен(на)' : 'отметить, что свободен(на)') + '</small></button>';
+    $('quick').innerHTML = qb('free_me', '🙋', meLabel()) + qb('free_partner', '💜', partnerLabel()) +
+      '<button class="qbtn" id="qMeet"><span class="ic">💘</span>Встреча<small>запланировать</small></button>';
+    $('qMeet').onclick = () => eventForm(selected);
     const evs = state.events.filter(e => e.date === selected).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
     const d = parse(selected);
     const anns = allAnniversaries().filter(a => { const x = parse(a.date);
@@ -518,7 +565,7 @@
     let html = anns.map(a => '<div class="item"><div class="icon">' + (a.emoji || '🎉') + '</div><div class="body"><div class="t">' +
       esc(a.title) + '</div><div class="s">Особенная дата</div></div></div>').join('');
     html += evs.map(e => eventRow(e, false)).join('');
-    $('dayList').innerHTML = html || '<div class="empty">Пока пусто. Отметь, что ты свободен(на), или запланируй встречу 💌</div>';
+    $('dayList').innerHTML = html || '<div class="empty">В этот день пока ничего нет. Нажми кнопку выше, чтобы отметить, кто свободен, или запланировать встречу 💌</div>';
   }
 
   function renderUpcoming() {
@@ -963,9 +1010,20 @@
   $('calGrid').onclick = e => { const b = e.target.closest('[data-date]'); if (!b) return;
     selected = b.dataset.date; const d = parse(selected);
     if (d.getMonth() !== view.getMonth()) view = new Date(d.getFullYear(), d.getMonth(), 1);
-    try { tg.HapticFeedback.selectionChanged(); } catch (x) {}
+    if (markMode) { toggleFree(selected, markMode); renderBanners(); }
+    else try { tg.HapticFeedback.selectionChanged(); } catch (x) {}
     renderCalendar(); };
-  $('addForDay').onclick = () => eventForm(selected);
+  document.querySelectorAll('[data-mark]').forEach(b => b.onclick = () => {
+    markMode = markMode === b.dataset.mark ? null : b.dataset.mark;
+    if (!markMode) toast('Сохранено 💗');
+    renderCalendar();
+  });
+  $('quick').addEventListener('click', e => {
+    const b = e.target.closest('[data-free]'); if (!b) return;
+    const on = toggleFree(selected, b.dataset.free);
+    renderCalendar();
+    toast(on ? 'Отмечено ✅' : 'Отметка снята');
+  });
   $('addAnn').onclick = () => annForm();
   $('addWish').onclick = () => wishForm();
   $('wishSeg').onclick = e => { const b = e.target.closest('[data-owner]'); if (b) { wishOwner = b.dataset.owner; renderWishes(); } };
