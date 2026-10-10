@@ -151,6 +151,20 @@
   .qcard .ans { background: rgba(255,255,255,.16); border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 14px; }
   .idea-big { font-size: 22px; font-weight: 700; text-align: center; padding: 22px 6px 6px; }
 
+  /* Мем дня */
+  .meme { position: relative; border-radius: var(--radius); overflow: hidden; background: #2b1d22; aspect-ratio: 1;
+    display: grid; place-items: center; margin-bottom: 12px; }
+  .meme img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .meme .fallback { font-size: 120px; }
+  .meme .cap { position: absolute; left: 10px; right: 10px; text-align: center; color: #fff; font-weight: 900;
+    font-family: Impact, "Arial Black", "Helvetica Neue", sans-serif; font-size: 23px; line-height: 1.15;
+    text-transform: uppercase; letter-spacing: .3px; -webkit-text-stroke: 1.2px #000;
+    text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
+  .meme .cap.top { top: 12px; }
+  .meme .cap.bottom { bottom: 14px; }
+  .meme .loading { position: absolute; color: #fff; opacity: .6; font-size: 14px; }
+  .meme-day { text-align: center; color: var(--hint); font-size: 13px; margin: 4px 0 10px; }
+
   .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: rgba(30,30,30,.92);
     color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 20; opacity: 0;
     transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
@@ -252,6 +266,20 @@
   </div>
 </section>
 
+<!-- МЕМ ДНЯ -->
+<section id="tab-meme" hidden>
+  <div class="meme-day" id="memeDay"></div>
+  <div class="meme" id="memeBox"></div>
+  <div class="row">
+    <button class="btn" id="memeNext">😹 Ещё мем</button>
+    <button class="btn ghost" id="memeSend">💌 Отправить</button>
+  </div>
+  <div style="height:8px"></div>
+  <button class="btn ghost" id="memeFav">🤍 В избранное</button>
+  <div class="section-title"><h3>Избранные мемы</h3></div>
+  <div class="card" id="memeFavs"></div>
+</section>
+
 <!-- МЫ / НАСТРОЙКИ -->
 <section id="tab-us" hidden>
   <div class="card">
@@ -292,6 +320,7 @@
   <button data-tab="dates"><span class="i">💞</span>Годовщины</button>
   <button data-tab="wishes"><span class="i">🎁</span>Хотелки</button>
   <button data-tab="together"><span class="i">✨</span>Вместе</button>
+  <button data-tab="meme"><span class="i">😹</span>Мем дня</button>
   <button data-tab="us"><span class="i">👩‍❤️‍👨</span>Мы</button>
 </nav>
 
@@ -343,7 +372,7 @@
   }
 
   const blank = () => ({ meName: '', partnerName: '', startDate: '', events: [], anniversaries: [],
-    wishes: [], ideas: [], memories: [], answers: [], deleted: [], updatedAt: 0 });
+    wishes: [], ideas: [], memories: [], answers: [], memeFavs: [], deleted: [], updatedAt: 0 });
   let state = blank();
 
   // ---------- Утилиты ----------
@@ -415,6 +444,126 @@
     'Обожаю, как ты смеёшься 😍', 'Мне с тобой спокойно и тепло, как дома 🏠', 'Ты умнее, сильнее и лучше, чем думаешь 💪',
     'Хочу обнять тебя прямо сейчас 🤗', 'Каждый день с тобой — мой любимый ❤️', 'Ты мой человек. Всегда 💞',
     'Горжусь тобой! Ты большой(ая) молодец 🏆', 'Если бы можно было выбрать снова — я бы снова выбрал(а) тебя 💍'];
+
+  // Подписи для «мема дня»: [верх, низ]. Картинки — случайные котики и пёсики из открытых API.
+  const MEMES = [
+    ['Когда ты пишешь «я скоро»', 'а сам ещё даже не встал с кровати'],
+    ['Я, когда ты рядом', 'режим «довольный пирожок» включён'],
+    ['Ты: «я не голодна»', 'тоже ты через 5 минут: «дай откусить»'],
+    ['Когда она говорит «делай что хочешь»', 'но ты знаешь, что это ловушка'],
+    ['Мой любимый человек', 'и по совместительству любимый вор одеяла'],
+    ['Когда получил «спокойной ночи»', 'и улыбаешься в темноте как дурак'],
+    ['Планы на выходные:', 'обнимашки. всё. это весь план'],
+    ['Когда ты сказала «я на минутку»', 'а прошло 40 минут'],
+    ['Я, ожидающий твоё сообщение', 'уже 3 минуты. это вечность'],
+    ['Когда ты рядом', 'даже понедельник ничего такой'],
+    ['Он: «я выбрал фильм»', 'мы: 40 минут листаем каталог'],
+    ['Когда видишь, что ты печатаешь...', 'и сердце уже бьётся быстрее'],
+    ['Я не ревную', 'я просто очень внимательно смотрю'],
+    ['Официальный обнимательный инспектор', 'пришёл с проверкой'],
+    ['Когда у тебя плохое настроение', 'вызываю отряд поцелуйчиков'],
+    ['Наши отношения:', '50% любовь, 50% «что будем есть?»'],
+    ['Когда сказали «я соскучился»', 'и ты растаял(а) окончательно'],
+    ['Ты мой любимый', 'человек. и подушка. и грелка'],
+    ['Когда ты говоришь «я сама»', 'а потом просишь открыть банку'],
+    ['Мне не нужен психолог', 'мне нужно, чтобы ты меня погладил(а)'],
+    ['Ты: «давай рано ляжем спать»', 'мы в 3 ночи: смотрим видео про енотов'],
+    ['Когда ты заболел(а)', 'а я уже несу чай, плед и драму'],
+    ['Сегодня я обязан(а)', 'сказать, что ты самый милый'],
+    ['Я, когда ты в хорошем настроении', 'тоже в хорошем настроении. вот так'],
+    ['Когда спросили «как дела?»', 'а у меня в голове только ты'],
+    ['Утро без тебя', 'это не утро, а недоразумение'],
+    ['Когда ты присылаешь мем', 'а я уже отправил(а) тебе этот же'],
+    ['Самое опасное оружие в мире:', 'твой взгляд «ну пожааалуйста»'],
+    ['Когда хочешь сказать «люблю»', 'но говоришь «ты поел(а)?»'],
+    ['Мой стиль заботы:', 'отправить тебе 15 смешных видео подряд'],
+    ['Когда ты меня обнимаешь', 'перезагрузка системы прошла успешно'],
+    ['Я: «я не буду десерт»', 'тоже я: доедаю твой'],
+    ['Как я тебя люблю?', 'больше, чем пиццу. а это серьёзно'],
+    ['Когда ты задерживаешься', 'я уже придумал(а) 12 сценариев'],
+    ['Когда ты рядом', 'тревожность тихонько вышла из чата'],
+    ['Пункт 1: обнять', 'пункт 2: см. пункт 1'],
+    ['Когда я капризничаю', 'а ты всё равно меня любишь'],
+    ['Мы с тобой как', 'два котика на одном подоконнике'],
+    ['Когда ты в моей толстовке', 'это теперь твоя толстовка, я понял(а)'],
+    ['Утреннее «доброе утро»', 'от тебя лучше любого кофе'],
+    ['Когда ты смеёшься над моей шуткой', 'даже если она не смешная'],
+    ['Как выглядит счастье?', 'как ты в пижаме с чаем'],
+    ['Ты меня бесишь', 'но только потому, что я тебя очень люблю'],
+    ['Когда в магазине говорят «что-то ещё?»', 'да. чтобы ты была рядом'],
+    ['Мой будильник:', 'твоё «вставай, соня»'],
+    ['Когда ты говоришь «я толстая»', 'а я вижу самое прекрасное существо'],
+    ['Делюсь едой только с тобой', 'это высшая степень любви'],
+    ['Когда долго не виделись', 'готовлю обнимашки с процентами'],
+    ['Я делаю вид, что сплю', 'чтобы ты меня поцеловал(а)'],
+    ['Мне ничего не надо', 'кроме тебя. ну и шоколадку'],
+    ['Когда ты зовёшь меня полным именем', 'я уже начинаю вспоминать, что натворил(а)'],
+    ['Слушаю твои голосовые', 'по 3 раза. просто так'],
+    ['Знаешь, чем ты отличаешься от звёзд?', 'звёзды далеко, а ты мой'],
+    ['Мы:', 'спорим, кто кого больше любит. я выиграл(а)'],
+    ['Когда ты красишься 2 часа', 'а я и так считал(а) тебя красивой'],
+    ['Он: «я ненадолго в игру»', 'игра: длится до рассвета'],
+    ['Когда ты гладишь меня по голове', 'я превращаюсь в довольного котика'],
+    ['Самое сложное в отношениях —', 'решить, где поесть'],
+    ['Я не прилипчивый(ая)', 'я просто хочу быть рядом 24/7'],
+    ['Мой спортивный режим:', 'бег к тебе навстречу'],
+    ['Когда ты называешь меня милым прозвищем', 'всё, я растаял(а), уберите лужу'],
+    ['Внимание! Обнаружен дефицит обнимашек', 'срочно требуется пополнение'],
+    ['Кто-то: «посмотри, какая красота»', 'я смотрю на тебя'],
+    ['Мой любимый звук', 'это как ты смеёшься'],
+    ['Когда ты уходишь', 'я уже скучаю. через секунду'],
+    ['Отношения — это когда', 'знаешь, какой соус она любит'],
+    ['Когда ты спишь', 'ты похож(а) на маленького ангелочка'],
+    ['Котик дня советует:', 'обнять свою половинку прямо сейчас'],
+    ['Пёсик дня одобряет', 'ваши отношения на 100%'],
+    ['Срочная новость:', 'тебя очень сильно любят'],
+    ['Когда ты пишешь «хм»', 'и я анализирую это 2 часа'],
+    ['Мой план на жизнь:', 'ты, я, котик и вкусная еда'],
+    ['Ты моя', 'любимая уведомлялка'],
+    ['Когда ты говоришь «я не обиделась»', 'всё, пора нести шоколадку'],
+    ['Говорят, нельзя любить сильнее', 'я проверяю. пока можно'],
+    ['Когда ты кладёшь голову мне на плечо', 'я не двигаюсь 3 часа, даже если затекло'],
+    ['Я и ты против всего мира', 'ну, или против понедельника'],
+    ['Когда ты приготовил(а) еду', 'это самый вкусный ресторан в городе'],
+    ['Никто: ', 'я: думаю о тебе'],
+    ['Ты мой любимый', 'повод не выходить из дома'],
+    ['Наша суперспособность:', 'понимать друг друга с одного взгляда'],
+    ['Когда ты включаешь мою любимую песню', 'это любовь, я уверен(а)'],
+    ['Отчёт за сегодня:', 'люблю тебя — 100%. выполнено'],
+    ['Когда идём гулять', 'и ты берёшь меня за руку'],
+    ['Самый уютный плед', 'это ты'],
+    ['Когда ты говоришь «я сейчас»', 'я ставлю чайник второй раз'],
+    ['Я на свидании:', 'смотрю на тебя вместо меню'],
+    ['Ты не идеальный(ая)', 'ты лучше. ты мой(моя)'],
+    ['Внутри меня живёт котик', 'который мурчит, когда ты рядом'],
+    ['Когда ты присылаешь фото', 'я сохраняю его в «самое важное»'],
+    ['Хочешь секрет?', 'я опять по тебе соскучился(ась)'],
+    ['Когда ты улыбаешься', 'солнце завидует'],
+    ['Пицца — это хорошо', 'но пицца с тобой — ещё лучше'],
+    ['Когда предлагаю «пойдём куда-нибудь»', 'а ты уже в пижаме. остаёмся'],
+    ['Говорят, счастье не купишь', 'а мне повезло — оно у меня бесплатно'],
+    ['Когда долго выбираем подарок', 'а лучший подарок — это ты'],
+    ['Наша пара в одном слове:', 'мимими'],
+    ['Котики любят коробки', 'а я люблю тебя'],
+    ['Мой антистресс', 'твоё «всё будет хорошо»'],
+    ['Когда тебя нет рядом', 'даже котики грустят'],
+    ['Ещё один мем, чтобы ты улыбнулся(ась)', 'миссия выполнена?'],
+    ['Ты — мой любимый человек', 'и это не обсуждается'],
+    ['Когда ты зеваешь', 'я тоже зеваю. это связь душ'],
+    ['Я не умею готовить', 'но для тебя сделаю самый вкусный бутерброд'],
+    ['Когда ты говоришь «я уже выхожу»', 'и я знаю: ещё минут 20'],
+    ['Самые важные слова дня:', 'ты покушал(а)?'],
+    ['Когда ты в плохом настроении', 'я твой личный клоун'],
+    ['Мы не ссоримся', 'мы обсуждаем, кто прав. я, конечно'],
+    ['Когда я один(одна) дома', 'разговариваю с котиком о тебе'],
+    ['Мне не нужен Wi-Fi', 'у меня есть связь с тобой'],
+    ['Когда ты целуешь в лоб', 'всё, я в домике'],
+    ['Ты причина', 'моей глупой улыбки в метро'],
+    ['Вечер идеальный, если', 'ты, сериал и что-то вкусненькое'],
+    ['Этот котик просил передать:', 'ты сегодня особенно красивый(ая)'],
+    ['Этот пёсик просил передать:', 'хватит грустить, тебя любят'],
+    ['Новый день — новый мем', 'а любовь та же. даже больше'],
+  ];
 
   // Вопрос дня меняется в полночь, одинаковый у обоих
   const questionIndex = () => daysBetween(new Date(2024, 0, 1), today()) % QUESTIONS.length;
@@ -822,7 +971,87 @@
       closeSheet(); shareText('💌 ' + t); };
   }
 
-  function renderAll() { renderHero(); renderBanners(); renderCalendar(); renderDates(); renderWishes(); renderTogether(); renderUs(); }
+  // ---------- Мем дня ----------
+  const ANIMAL_EMOJI = ['🐱', '🐶', '🐹', '🐰', '🦊', '🐼', '🐨', '🐻'];
+  let meme = null;
+
+  async function fetchAnimal(kind) {
+    if (kind === 'cat') {
+      const j = await (await fetch('https://cataas.com/cat/cute?json=true')).json();
+      return j.url || ('https://cataas.com/cat/' + (j.id || j._id));
+    }
+    const j = await (await fetch('https://dog.ceo/api/breeds/image/random')).json();
+    if (j.status !== 'success') throw new Error('dog');
+    return j.message;
+  }
+
+  async function loadMemeImage(n) {
+    const first = n % 2 ? 'dog' : 'cat';
+    for (const kind of [first, first === 'cat' ? 'dog' : 'cat']) {
+      try { return await fetchAnimal(kind); } catch (e) {}
+    }
+    return '';
+  }
+
+  async function showMeme(n, isDaily) {
+    const cap = MEMES[n];
+    meme = { n, top: cap[0], bottom: cap[1], img: '' };
+    $('memeDay').textContent = isDaily ? '✨ Мем дня · ' + fmt(iso(today())) : '😹 Случайный мем';
+    $('memeBox').innerHTML = '<div class="loading">Ищу самого милого котика…</div>' + capHtml(cap);
+    updateFavBtn();
+    // Картинка мема дня запоминается, чтобы весь день был один и тот же мем
+    const key = 'meme_img_' + iso(today());
+    let img = '';
+    if (isDaily) { try { img = localStorage.getItem(key) || ''; } catch (e) {} }
+    if (!img) img = await loadMemeImage(n);
+    if (isDaily && img) { try { localStorage.setItem(key, img); } catch (e) {} }
+    if (!meme || meme.n !== n) return;
+    meme.img = img;
+    renderMemeBox();
+  }
+
+  const capHtml = c => '<div class="cap top">' + esc(c[0]) + '</div><div class="cap bottom">' + esc(c[1]) + '</div>';
+
+  function renderMemeBox() {
+    const cap = [meme.top, meme.bottom];
+    const fallback = '<div class="fallback">' + ANIMAL_EMOJI[meme.n % ANIMAL_EMOJI.length] + '</div>';
+    $('memeBox').innerHTML = (meme.img ? '<img alt="" src="' + esc(meme.img) + '">' : fallback) + capHtml(cap);
+    const im = $('memeBox').querySelector('img');
+    if (im) im.onerror = () => { im.outerHTML = fallback; };
+  }
+
+  function ensureMeme() { if (!meme) showMeme(daysBetween(new Date(2024, 0, 1), today()) * 7 % MEMES.length, true); }
+
+  const isFav = () => meme && state.memeFavs.some(f => f.top === meme.top);
+  function updateFavBtn() { $('memeFav').textContent = isFav() ? '❤️ В избранном' : '🤍 В избранное'; }
+
+  function renderMemeFavs() {
+    $('memeFavs').innerHTML = state.memeFavs.slice().reverse().map(f =>
+      '<div class="item" data-fav="' + f.id + '"><div class="icon">😹</div><div class="body"><div class="t">' + esc(f.top) +
+      '</div><div class="s">' + esc(f.bottom) + '</div></div></div>').join('') ||
+      '<div class="empty">Нажми «🤍 В избранное», чтобы сохранить мем, который особенно понравился</div>';
+  }
+
+  $('memeNext').onclick = () => {
+    let n; do { n = Math.floor(Math.random() * MEMES.length); } while (meme && n === meme.n && MEMES.length > 1);
+    showMeme(n, false); haptic();
+  };
+  $('memeSend').onclick = () => { if (meme) shareText('😹 ' + meme.top + '\n' + meme.bottom + ' 💞', meme.img); };
+  $('memeFav').onclick = () => {
+    if (!meme) return;
+    if (isFav()) state.memeFavs = state.memeFavs.filter(f => f.top !== meme.top);
+    else state.memeFavs.push({ id: uid(), top: meme.top, bottom: meme.bottom, img: meme.img });
+    save(); updateFavBtn(); renderMemeFavs(); haptic();
+  };
+  $('memeFavs').addEventListener('click', e => {
+    const it = e.target.closest('[data-fav]'); if (!it) return;
+    const f = state.memeFavs.find(x => x.id === it.dataset.fav);
+    const n = MEMES.findIndex(m => m[0] === f.top);
+    meme = { n: n < 0 ? 0 : n, top: f.top, bottom: f.bottom, img: f.img };
+    $('memeDay').textContent = '❤️ Из избранного'; renderMemeBox(); updateFavBtn(); window.scrollTo(0, 0);
+  });
+
+  function renderAll() { renderHero(); renderBanners(); renderCalendar(); renderDates(); renderWishes(); renderTogether(); renderMemeFavs(); renderUs(); }
 
   // ---------- Нижний лист (формы) ----------
   function openSheet(html) {
@@ -1073,7 +1302,8 @@
   };
 
   function switchTab(name) {
-    ['calendar', 'dates', 'wishes', 'together', 'us'].forEach(t => $('tab-' + t).hidden = t !== name);
+    if (name === 'meme') ensureMeme();
+    ['calendar', 'dates', 'wishes', 'together', 'meme', 'us'].forEach(t => $('tab-' + t).hidden = t !== name);
     document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
     window.scrollTo(0, 0);
   }
