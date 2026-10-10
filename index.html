@@ -100,7 +100,7 @@
   .tabbar { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: var(--card);
     border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); z-index: 5; }
   .tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-    font-size: 11px; color: var(--hint); padding: 4px 0; }
+    font-size: 10px; color: var(--hint); padding: 4px 0; }
   .tabbar button .i { font-size: 21px; filter: grayscale(1); opacity: .6; }
   .tabbar button.on { color: var(--accent); }
   .tabbar button.on .i { filter: none; opacity: 1; }
@@ -114,6 +114,29 @@
   .sheet.show { transform: none; }
   .sheet h2 { font-size: 18px; margin-bottom: 4px; }
   .sheet .actions { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Переключатель, отметки, теги */
+  .seg { display: flex; background: var(--card); border-radius: 12px; padding: 3px; margin: 4px 0 10px; }
+  .seg button { flex: 1; padding: 9px 6px; border-radius: 10px; font-size: 14px; color: var(--hint);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); flex-shrink: 0;
+    display: grid; place-items: center; color: #fff; font-size: 13px; margin-top: 7px; }
+  .check.on { background: var(--accent); border-color: var(--accent); }
+  .item.done .t { text-decoration: line-through; color: var(--hint); }
+  .actions-inline { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+  .tag { font-size: 12px; padding: 3px 8px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
+
+  /* Вопрос дня */
+  .qcard { background: linear-gradient(135deg, #8a5cff, #e8466e); color: #fff; border-radius: var(--radius);
+    padding: 16px; margin: 12px 0; }
+  .qcard .label { font-size: 13px; opacity: .85; }
+  .qcard .q { font-size: 17px; font-weight: 700; margin: 6px 0 12px; }
+  .qcard textarea { background: rgba(255,255,255,.18); border-color: transparent; color: #fff; }
+  .qcard textarea::placeholder { color: rgba(255,255,255,.75); }
+  .qcard .btn { background: #fff; color: var(--accent); }
+  .qcard .ans { background: rgba(255,255,255,.16); border-radius: 12px; padding: 10px 12px; margin-top: 8px; font-size: 14px; }
+  .idea-big { font-size: 22px; font-weight: 700; text-align: center; padding: 22px 6px 6px; }
 
   .toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: rgba(30,30,30,.92);
     color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 20; opacity: 0;
@@ -165,6 +188,51 @@
   <div class="card" id="milestones"></div>
 </section>
 
+<!-- ХОТЕЛКИ -->
+<section id="tab-wishes" hidden>
+  <div class="seg" id="wishSeg">
+    <button data-owner="me" class="on">🙋 Мои</button>
+    <button data-owner="partner">💜 Половинки</button>
+  </div>
+  <p class="muted" id="wishHint" style="margin: 0 2px 12px"></p>
+  <button class="btn" id="addWish">+ Добавить хотелку</button>
+  <div style="height:12px"></div>
+  <div class="card" id="wishList"></div>
+  <button class="btn ghost" id="shareWishes">Отправить мой список половинке</button>
+</section>
+
+<!-- ВМЕСТЕ -->
+<section id="tab-together" hidden>
+  <div class="qcard" id="qcard"></div>
+
+  <div class="section-title">
+    <h3>Идеи для свиданий</h3>
+    <button class="btn small ghost" id="randomIdea">🎲 Придумать</button>
+  </div>
+  <div class="card" id="ideaList"></div>
+
+  <div class="section-title">
+    <h3>Хотим сделать вместе</h3>
+    <button class="btn small" id="addDream">+ Добавить</button>
+  </div>
+  <div class="card" id="dreamList"></div>
+
+  <div class="section-title">
+    <h3>Наши воспоминания</h3>
+    <button class="btn small" id="addMemory">+ Добавить</button>
+  </div>
+  <div class="card" id="memoryList"></div>
+
+  <div class="section-title"><h3>Сказать приятное</h3></div>
+  <div class="card">
+    <p class="muted" style="margin-top:0">Отправь половинке комплимент или записку прямо в Telegram.</p>
+    <div class="row">
+      <button class="btn ghost" id="sendCompliment">💌 Комплимент</button>
+      <button class="btn ghost" id="writeNote">✍️ Записка</button>
+    </div>
+  </div>
+</section>
+
 <!-- МЫ / НАСТРОЙКИ -->
 <section id="tab-us" hidden>
   <div class="card">
@@ -203,6 +271,8 @@
 <nav class="tabbar">
   <button data-tab="calendar" class="on"><span class="i">📅</span>Календарь</button>
   <button data-tab="dates"><span class="i">💞</span>Годовщины</button>
+  <button data-tab="wishes"><span class="i">🎁</span>Хотелки</button>
+  <button data-tab="together"><span class="i">✨</span>Вместе</button>
   <button data-tab="us"><span class="i">👩‍❤️‍👨</span>Мы</button>
 </nav>
 
@@ -253,7 +323,8 @@
     }, 400);
   }
 
-  const blank = () => ({ meName: '', partnerName: '', startDate: '', events: [], anniversaries: [], deleted: [], updatedAt: 0 });
+  const blank = () => ({ meName: '', partnerName: '', startDate: '', events: [], anniversaries: [],
+    wishes: [], ideas: [], memories: [], answers: [], deleted: [], updatedAt: 0 });
   let state = blank();
 
   // ---------- Утилиты ----------
@@ -289,6 +360,55 @@
     free_partner: { icon: '💜', name: () => partnerLabel() + ' свободен(на)' },
   };
   const typeName = t => { const n = TYPES[t].name; return typeof n === 'function' ? n() : n; };
+
+  const DATE_IDEAS = ['Пикник в парке 🧺', 'Приготовить ужин вместе 🍝', 'Кино под пледом дома 🎬', 'Прогулка на закате 🌅',
+    'Квест-комната 🔐', 'Каток ⛸️', 'Мастер-класс по гончарному делу 🏺', 'Поездка за город на один день 🚗',
+    'Настольные игры и какао 🎲', 'Фотосессия друг друга 📸', 'Концерт любимой группы 🎸', 'Завтрак в новом кафе ☕',
+    'Вечер караоке 🎤', 'Музей или выставка 🖼️', 'Смотреть на звёзды за городом ✨', 'Боулинг 🎳', 'Спа-вечер дома 🛁',
+    'Велопрогулка 🚲', 'Стендап-концерт 😂', 'Ужин при свечах 🕯️', 'Испечь что-нибудь вместе 🧁', 'Погулять по незнакомому району 🗺️',
+    'Театр 🎭', 'Аквапарк 💦', 'Написать друг другу письма в будущее ✉️', 'Пересмотреть ваш первый совместный фильм 🍿',
+    'Скалодром 🧗', 'Ночная прогулка по городу 🌃', 'Кулинарный мастер-класс 👩‍🍳', 'Покататься на колесе обозрения 🎡',
+    'Собрать пазл на 1000 деталей 🧩', 'Устроить день без телефонов 📵', 'Сходить в планетарий 🔭', 'Катание на лодке 🚣',
+    'Вечер воспоминаний: смотреть ваши старые фото 💞', 'Конная прогулка 🐴', 'Нарисовать портреты друг друга 🎨',
+    'Сходить на дегустацию чая или кофе 🍵', 'Спонтанная поездка на электричке в соседний город 🚆', 'Танцевальный урок 💃'];
+
+  const QUESTIONS = ['Какой момент с нами ты вспоминаешь чаще всего?', 'Что тебя во мне удивило, когда мы познакомились?',
+    'Куда бы ты хотел(а) поехать со мной больше всего?', 'Какая песня напоминает тебе о нас?',
+    'Что я делаю такого, от чего тебе становится тепло?', 'Каким было твоё первое впечатление обо мне?',
+    'Какое наше свидание было самым лучшим?', 'Чему ты научился(ась) благодаря мне?', 'Какой у тебя идеальный выходной вдвоём?',
+    'Какая мечта у тебя есть, о которой ты мне ещё не рассказывал(а)?', 'Что тебя рассмешило на этой неделе?',
+    'Какой подарок ты бы хотел(а) получить, но стесняешься попросить?', 'Где мы будем через 5 лет, как ты думаешь?',
+    'Какую традицию ты хотел(а) бы завести у нас?', 'За что ты мне благодарен(на) сегодня?', 'Какой твой любимый мой жест или привычка?',
+    'Если бы мы были героями фильма — какого жанра?', 'Какое блюдо ты хочешь, чтобы мы приготовили вместе?',
+    'Что тебе помогает расслабиться после тяжёлого дня?', 'Какой комплимент тебе приятнее всего слышать?',
+    'Чем ты гордишься в наших отношениях?', 'Что бы ты хотел(а) попробовать впервые вместе со мной?',
+    'Какое твоё самое тёплое детское воспоминание?', 'Как ты понимаешь, что я тебя люблю?',
+    'Если бы у нас был целый день и любой бюджет — как бы мы его провели?', 'Какая наша общая шутка самая любимая?',
+    'Что тебя вдохновляет в последнее время?', 'Какой фильм или сериал ты хочешь посмотреть со мной?',
+    'Что для тебя значит «быть дома»?', 'Какой сюрприз тебя порадовал бы больше всего?', 'Что мы делаем лучше всех на свете?',
+    'Какую черту характера ты во мне больше всего ценишь?', 'О чём ты мечтал(а) в 10 лет?', 'Какой у нас будет идеальный отпуск?',
+    'Какое слово лучше всего описывает наши отношения?', 'Чего ты ждёшь от этого месяца?', 'Какой мой поступок ты запомнил(а) надолго?',
+    'Что бы ты сказал(а) себе в день нашего знакомства?', 'Какое время года самое «наше» и почему?', 'Что сделает завтрашний день лучше?'];
+
+  const COMPLIMENTS = ['Ты делаешь мой день лучше просто тем, что ты есть 💗', 'Думаю о тебе и улыбаюсь как дурак(а) 😊',
+    'С тобой даже обычный вторник — праздник 🎉', 'Ты самый красивый человек, которого я знаю ✨', 'Спасибо, что ты у меня есть 🫶',
+    'Скучаю по тебе. Сильно. Прямо сейчас 💌', 'Ты — моё любимое «доброе утро» и «спокойной ночи» 🌙',
+    'Обожаю, как ты смеёшься 😍', 'Мне с тобой спокойно и тепло, как дома 🏠', 'Ты умнее, сильнее и лучше, чем думаешь 💪',
+    'Хочу обнять тебя прямо сейчас 🤗', 'Каждый день с тобой — мой любимый ❤️', 'Ты мой человек. Всегда 💞',
+    'Горжусь тобой! Ты большой(ая) молодец 🏆', 'Если бы можно было выбрать снова — я бы снова выбрал(а) тебя 💍'];
+
+  // Вопрос дня меняется в полночь, одинаковый у обоих
+  const questionIndex = () => daysBetween(new Date(2024, 0, 1), today()) % QUESTIONS.length;
+  const PRIO = { 1: '🔥 Очень хочу', 2: '🙂 Было бы здорово', 3: '💭 Мечта' };
+  const normUrl = u => !u ? '' : /^https?:\/\//i.test(u) ? u : 'https://' + u;
+  const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } };
+  const pickOne = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  // Группа «чипов» с одиночным выбором
+  function chips(id, cb) {
+    $(id).onclick = ev => { const b = ev.target.closest('.chip'); if (!b) return;
+      [...$(id).children].forEach(c => c.classList.toggle('on', c === b)); cb(b.dataset.v); };
+  }
 
   // Ближайшее повторение ежегодной даты
   function nextOccurrence(dateStr, yearly) {
@@ -333,6 +453,10 @@
       out.push('<div class="banner"><div class="emoji">💘</div><div><b>Сегодня встреча:</b> ' + esc(e.title) +
         (e.time ? ' в ' + esc(e.time) : '') + '</div></div>');
     });
+    state.memories.forEach(m => { const d = parse(m.date), years = t.getFullYear() - d.getFullYear();
+      if (years > 0 && d.getMonth() === t.getMonth() && d.getDate() === t.getDate())
+        out.push('<div class="banner"><div class="emoji">📸</div><div><b>В этот день ' + years + ' ' + plural(years, 'год', 'года', 'лет') +
+          ' назад:</b> ' + esc(m.title) + '</div></div>'); });
     $('banners').innerHTML = out.join('');
   }
 
@@ -458,7 +582,200 @@
     $('meName').value = state.meName; $('partnerName').value = state.partnerName; $('startDate').value = state.startDate;
   }
 
-  function renderAll() { renderHero(); renderBanners(); renderCalendar(); renderDates(); renderUs(); }
+  // ---------- Хотелки ----------
+  let wishOwner = 'me';
+
+  function renderWishes() {
+    const seg = $('wishSeg').children;
+    seg[1].textContent = '💜 ' + partnerLabel();
+    [...seg].forEach(b => b.classList.toggle('on', b.dataset.owner === wishOwner));
+    const mine = wishOwner === 'me';
+    $('wishHint').textContent = mine
+      ? 'Добавляй то, что хочешь получить в подарок. ' + partnerLabel() + ' увидит список после синхронизации, а что решит подарить — останется сюрпризом 🤫'
+      : 'Отметь «Я подарю», чтобы не забыть и не подарить одно и то же дважды. ' + partnerLabel() + ' этой отметки не увидит.';
+    $('addWish').textContent = mine ? '+ Добавить хотелку' : '+ Записать, что хочет ' + partnerLabel();
+    $('shareWishes').hidden = !mine;
+
+    const list = state.wishes.filter(w => w.owner === wishOwner)
+      .sort((a, b) => (a.gifted - b.gifted) || ((a.priority || 2) - (b.priority || 2)) || (b.updatedAt - a.updatedAt));
+    $('wishList').innerHTML = list.map(w => {
+      const url = normUrl(w.url);
+      const meta = [w.price ? '💰 ' + esc(w.price) : '', url ? '🔗 <a href="' + esc(url) + '" data-ext>' + esc(host(url)) + '</a>' : '']
+        .filter(Boolean).join(' · ');
+      let tags = '<span class="tag">' + PRIO[w.priority || 2] + '</span>';
+      if (w.gifted) tags += '<span class="tag">✅ Подарено</span>';
+      else if (!mine && w.reservedBy === 'me') tags += '<span class="tag">🎁 Ты даришь</span>';
+      const actions = !mine && !w.gifted
+        ? '<div class="actions-inline"><button class="btn small' + (w.reservedBy === 'me' ? ' ghost' : '') + '" data-reserve="' + w.id + '">' +
+          (w.reservedBy === 'me' ? 'Передумал(а)' : '🎁 Я подарю') + '</button>' +
+          '<button class="btn small ghost" data-gifted="' + w.id + '">Подарено ✓</button></div>'
+        : '';
+      return '<div class="item' + (w.gifted ? ' done' : '') + '" data-wish="' + w.id + '"><div class="icon">' + (w.gifted ? '✅' : '🎁') +
+        '</div><div class="body"><div class="t">' + esc(w.title) + '</div>' + (meta ? '<div class="s">' + meta + '</div>' : '') +
+        (w.note ? '<div class="s">' + esc(w.note) + '</div>' : '') + '<div class="actions-inline">' + tags + '</div>' + actions + '</div></div>';
+    }).join('') || '<div class="empty">' + (mine
+      ? 'Список пуст. Добавь то, что хочешь: вставь ссылку на товар, впиши цену и размер 🎀'
+      : 'Пока пусто. Попроси ' + esc(partnerLabel()) + ' прислать код синхронизации или запиши сам(а), что слышал(а) 👂') + '</div>';
+  }
+
+  function wishForm(existing) {
+    const w = existing || { owner: wishOwner, title: '', url: '', price: '', note: '', priority: 2, gifted: false };
+    openSheet(
+      '<h2>' + (existing ? 'Изменить хотелку' : 'Новая хотелка') + '</h2>' +
+      '<label>Что хочется</label><input id="wTitle" placeholder="Духи, книга, поездка на море…" value="' + esc(w.title) + '">' +
+      '<label>Ссылка</label><input id="wUrl" inputmode="url" placeholder="Вставь ссылку на товар" value="' + esc(w.url) + '">' +
+      '<label>Цена</label><input id="wPrice" placeholder="≈ 3 000 ₽" value="' + esc(w.price) + '">' +
+      '<label>Подробности</label><textarea id="wNote" rows="2" placeholder="Размер, цвет, где купить…">' + esc(w.note) + '</textarea>' +
+      '<label>Насколько хочется</label><div class="chips" id="wPrio">' +
+      [1, 2, 3].map(p => '<button class="chip' + ((w.priority || 2) === p ? ' on' : '') + '" data-v="' + p + '">' + PRIO[p] + '</button>').join('') + '</div>' +
+      (existing ? '<label>Статус</label><div class="chips" id="wGift">' +
+        '<button class="chip' + (w.gifted ? '' : ' on') + '" data-v="0">Ещё хочется</button>' +
+        '<button class="chip' + (w.gifted ? ' on' : '') + '" data-v="1">✅ Уже подарили</button></div>' : '') +
+      '<div class="actions"><button class="btn" id="wSave">Сохранить</button>' +
+      (existing ? '<button class="btn danger" id="wDel">Удалить</button>' : '') + '</div>'
+    );
+    let priority = w.priority || 2, gifted = !!w.gifted;
+    chips('wPrio', v => priority = +v);
+    if (existing) chips('wGift', v => gifted = v === '1');
+    $('wSave').onclick = () => {
+      const title = $('wTitle').value.trim(); if (!title) return toast('Напиши, что хочется');
+      const data = { title, url: $('wUrl').value.trim(), price: $('wPrice').value.trim(), note: $('wNote').value.trim(),
+        priority, gifted, updatedAt: Date.now() };
+      if (existing) Object.assign(existing, data);
+      else state.wishes.push(Object.assign({ id: uid(), owner: wishOwner, reservedBy: '' }, data));
+      save(); closeSheet(); renderWishes(); haptic(); toast('Сохранено 🎁');
+    };
+    if (existing) $('wDel').onclick = () => confirmAsk('Удалить хотелку?', () => removeFrom('wishes', existing.id));
+  }
+
+  function removeFrom(coll, id) {
+    state[coll] = state[coll].filter(x => x.id !== id); state.deleted.push(id);
+    save(); closeSheet(); renderAll(); haptic('warning');
+  }
+
+  // ---------- Вместе: вопрос дня, идеи, мечты, воспоминания ----------
+  function renderQuestion() {
+    const n = questionIndex();
+    const mine = state.answers.find(a => a.n === n && a.owner === 'me');
+    const theirs = state.answers.find(a => a.n === n && a.owner === 'partner');
+    let html = '<div class="label">💬 Вопрос дня</div><div class="q">' + esc(QUESTIONS[n]) + '</div>';
+    if (!mine) {
+      html += (theirs ? '<div class="ans" style="margin:0 0 10px">💜 ' + esc(partnerLabel()) + ' уже ответил(а) — ответь, чтобы увидеть</div>' : '') +
+        '<textarea id="qAns" rows="2" placeholder="Твой ответ…"></textarea><div style="height:10px"></div>' +
+        '<button class="btn" id="qSave">Ответить</button>';
+    } else {
+      html += '<div class="ans"><b>' + esc(meLabel()) + ':</b> ' + esc(mine.text) + '</div>' +
+        (theirs ? '<div class="ans"><b>' + esc(partnerLabel()) + ':</b> ' + esc(theirs.text) + '</div>'
+          : '<div class="ans">' + esc(partnerLabel()) + ' пока не ответил(а). Ответ появится после синхронизации.</div>' +
+            '<div style="height:10px"></div><button class="btn" id="qShare">Задать вопрос половинке</button>');
+    }
+    $('qcard').innerHTML = html;
+    if ($('qSave')) $('qSave').onclick = () => {
+      const text = $('qAns').value.trim(); if (!text) return toast('Напиши ответ');
+      state.answers.push({ id: uid(), n, owner: 'me', text, updatedAt: Date.now() });
+      save(); renderQuestion(); haptic();
+    };
+    if ($('qShare')) $('qShare').onclick = () => shareText('💬 Вопрос дня для нас:\n«' + QUESTIONS[n] + '»\n\nМой ответ: ' + mine.text +
+      '\n\nОтветь в приложении «Милашки» 💞');
+  }
+
+  function renderTogether() {
+    renderQuestion();
+    const ideas = state.ideas.filter(i => i.kind === 'date');
+    $('ideaList').innerHTML = ideas.map(i => '<div class="item" data-idea="' + i.id + '"><div class="icon">💡</div><div class="body">' +
+      '<div class="t">' + esc(i.title) + '</div><div class="s">Нажми, чтобы запланировать</div></div></div>').join('') ||
+      '<div class="empty">Нажми «🎲 Придумать» — подскажем, куда сходить, или добавь свою идею</div>';
+
+    const dreams = state.ideas.filter(i => i.kind === 'dream').sort((a, b) => (a.done - b.done) || (b.updatedAt - a.updatedAt));
+    $('dreamList').innerHTML = dreams.map(i => '<div class="item' + (i.done ? ' done' : '') + '" data-dream="' + i.id + '">' +
+      '<button class="check' + (i.done ? ' on' : '') + '" data-toggle="' + i.id + '">' + (i.done ? '✓' : '') + '</button>' +
+      '<div class="body"><div class="t" style="margin-top:8px">' + esc(i.title) + '</div></div></div>').join('') ||
+      '<div class="empty">Ваш общий список мечт: прыгнуть с парашютом, увидеть море, завести кота 🐈</div>';
+    const done = dreams.filter(d => d.done).length;
+    if (dreams.length) $('dreamList').innerHTML += '<div class="muted" style="padding-top:10px;text-align:center">Сбылось ' + done + ' из ' + dreams.length + ' 🌟</div>';
+
+    const mems = state.memories.slice().sort((a, b) => b.date.localeCompare(a.date));
+    $('memoryList').innerHTML = mems.map(m => {
+      const url = normUrl(m.url);
+      return '<div class="item" data-memory="' + m.id + '"><div class="icon">' + (m.emoji || '📸') + '</div><div class="body">' +
+        '<div class="t">' + esc(m.title) + '</div><div class="s">' + fmtFull(m.date) +
+        (url ? ' · <a href="' + esc(url) + '" data-ext>фото</a>' : '') + '</div>' +
+        (m.text ? '<div class="s">' + esc(m.text) + '</div>' : '') + '</div></div>';
+    }).join('') || '<div class="empty">Записывайте важные моменты: первое свидание, поездки, смешные случаи. Через год приложение напомнит о них 📸</div>';
+  }
+
+  function randomIdeaSheet() {
+    const have = new Set(state.ideas.map(i => i.title));
+    const pool = DATE_IDEAS.filter(x => !have.has(x));
+    const idea = pickOne(pool.length ? pool : DATE_IDEAS);
+    openSheet(
+      '<div class="idea-big">' + esc(idea) + '</div>' +
+      '<div class="actions"><button class="btn" id="iPlan">📅 Запланировать</button>' +
+      '<button class="btn ghost" id="iSave">Сохранить в идеи</button>' +
+      '<button class="btn ghost" id="iNext">🎲 Другой вариант</button></div>' +
+      '<label>Или своя идея</label><div class="row"><input id="iOwn" placeholder="Например, сходить в бассейн">' +
+      '<button class="btn small" id="iAdd" style="flex:0 0 auto">Добавить</button></div>'
+    );
+    $('iPlan').onclick = () => { closeSheet(); switchTab('calendar'); eventForm(selected, null, { title: idea }); };
+    $('iSave').onclick = () => addIdea('date', idea);
+    $('iNext').onclick = randomIdeaSheet;
+    $('iAdd').onclick = () => { const t = $('iOwn').value.trim(); if (t) addIdea('date', t); };
+  }
+
+  function addIdea(kind, title) {
+    state.ideas.push({ id: uid(), kind, title, done: false, updatedAt: Date.now() });
+    save(); closeSheet(); renderTogether(); haptic(); toast('Добавлено ✨');
+  }
+
+  function ideaSheet(i) {
+    openSheet('<h2>' + esc(i.title) + '</h2><div class="actions">' +
+      (i.kind === 'date' ? '<button class="btn" id="iPlan">📅 Запланировать встречу</button>' : '') +
+      '<button class="btn danger" id="iDel">Удалить</button></div>');
+    if ($('iPlan')) $('iPlan').onclick = () => { closeSheet(); switchTab('calendar'); eventForm(selected, null, { title: i.title }); };
+    $('iDel').onclick = () => removeFrom('ideas', i.id);
+  }
+
+  function dreamForm() {
+    openSheet('<h2>Хотим сделать вместе</h2><label>Мечта</label><input id="dTitle" placeholder="Встретить рассвет на крыше, съездить в Грузию…">' +
+      '<div class="actions"><button class="btn" id="dSave">Добавить</button></div>');
+    $('dSave').onclick = () => { const t = $('dTitle').value.trim(); if (t) addIdea('dream', t); };
+  }
+
+  const MEM_EMOJI = ['📸', '❤️', '✈️', '🌊', '🎉', '😂', '🍷', '🏔️', '🎄'];
+  function memoryForm(existing) {
+    const m = existing || { date: iso(today()), title: '', text: '', url: '', emoji: '📸' };
+    openSheet(
+      '<h2>' + (existing ? 'Воспоминание' : 'Новое воспоминание') + '</h2>' +
+      '<label>Что было</label><input id="mTitle" placeholder="Наша первая поездка на море" value="' + esc(m.title) + '">' +
+      '<label>Когда</label><input type="date" id="mDate" value="' + m.date + '">' +
+      '<label>Значок</label><div class="chips" id="mEmoji">' +
+      MEM_EMOJI.map(x => '<button class="chip' + (x === m.emoji ? ' on' : '') + '" data-v="' + x + '">' + x + '</button>').join('') + '</div>' +
+      '<label>Как это было</label><textarea id="mText" rows="3" placeholder="Что запомнилось, что смешного случилось…">' + esc(m.text) + '</textarea>' +
+      '<label>Ссылка на фото или альбом</label><input id="mUrl" inputmode="url" placeholder="Например, ссылка на альбом в облаке" value="' + esc(m.url) + '">' +
+      '<div class="actions"><button class="btn" id="mSave">Сохранить</button>' +
+      (existing ? '<button class="btn danger" id="mDel">Удалить</button>' : '') + '</div>'
+    );
+    let emoji = m.emoji;
+    chips('mEmoji', v => emoji = v);
+    $('mSave').onclick = () => {
+      const title = $('mTitle').value.trim(), date = $('mDate').value;
+      if (!title || !date) return toast('Заполни название и дату');
+      const data = { title, date, emoji, text: $('mText').value.trim(), url: $('mUrl').value.trim(), updatedAt: Date.now() };
+      if (existing) Object.assign(existing, data); else state.memories.push(Object.assign({ id: uid() }, data));
+      save(); closeSheet(); renderAll(); haptic(); toast('Сохранено 📸');
+    };
+    if (existing) $('mDel').onclick = () => confirmAsk('Удалить воспоминание?', () => removeFrom('memories', existing.id));
+  }
+
+  function noteForm() {
+    openSheet('<h2>Записка для ' + esc(partnerLabel()) + '</h2>' +
+      '<textarea id="nText" rows="4" placeholder="Напиши что-нибудь тёплое…"></textarea>' +
+      '<div class="actions"><button class="btn" id="nSend">Отправить в Telegram</button></div>');
+    $('nSend').onclick = () => { const t = $('nText').value.trim(); if (!t) return toast('Напиши записку');
+      closeSheet(); shareText('💌 ' + t); };
+  }
+
+  function renderAll() { renderHero(); renderBanners(); renderCalendar(); renderDates(); renderWishes(); renderTogether(); renderUs(); }
 
   // ---------- Нижний лист (формы) ----------
   function openSheet(html) {
@@ -472,8 +789,8 @@
   $('overlay').onclick = closeSheet;
   if (tg && tg.BackButton) tg.BackButton.onClick(closeSheet);
 
-  function eventForm(date, existing) {
-    const e = existing || { type: 'meet', date, time: '', title: '', place: '', note: '' };
+  function eventForm(date, existing, preset) {
+    const e = existing || Object.assign({ type: 'meet', date, time: '', title: '', place: '', note: '' }, preset);
     openSheet(
       '<h2>' + (existing ? 'Изменить' : 'Новая запись') + '</h2>' +
       '<label>Что это</label><div class="chips" id="typeChips">' +
@@ -558,20 +875,39 @@
 
   // ---------- Синхронизация через код ----------
   // Партнёр видит «меня» как своего партнёра, поэтому типы free_me/free_partner и имена меняются местами.
-  function exportCode() {
-    const payload = { v: 1, meName: state.meName, partnerName: state.partnerName, startDate: state.startDate,
-      events: state.events, anniversaries: state.anniversaries, deleted: state.deleted };
-    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  // Всё, что принадлежит «мне» у партнёра, у меня принадлежит «партнёру», и наоборот.
+  const SWAP = { me: 'partner', partner: 'me', free_me: 'free_partner', free_partner: 'free_me' };
+  const sw = v => SWAP[v] || v;
+  const COLLECTIONS = {
+    events: x => Object.assign({}, x, { type: sw(x.type) }),
+    anniversaries: null,
+    wishes: x => Object.assign({}, x, { owner: sw(x.owner), reservedBy: x.reservedBy ? sw(x.reservedBy) : '' }),
+    ideas: null,
+    memories: null,
+    answers: x => Object.assign({}, x, { owner: sw(x.owner) }),
+  };
+
+  // Код сжимается (deflate), если webview это умеет, — так он помещается в сообщение Telegram
+  const pipe = (bytes, stream) => new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer().then(b => new Uint8Array(b));
+
+  async function exportCode() {
+    const payload = { v: 2, meName: state.meName, partnerName: state.partnerName, startDate: state.startDate, deleted: state.deleted };
+    Object.keys(COLLECTIONS).forEach(k => payload[k] = state[k]);
+    let bytes = new TextEncoder().encode(JSON.stringify(payload)), prefix = 'LOVE';
+    if (window.CompressionStream) {
+      try { bytes = await pipe(bytes, new CompressionStream('deflate-raw')); prefix = 'LOVZ'; } catch (e) {}
+    }
     let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
-    return 'LOVE' + btoa(bin);
+    return prefix + btoa(bin);
   }
 
-  function importCode(code) {
+  async function importCode(code) {
     code = code.trim().replace(/\s+/g, '');
-    const i = code.indexOf('LOVE'); if (i < 0) throw new Error('bad');
+    const i = code.search(/LOV[EZ]/); if (i < 0) throw new Error('bad');
     const bin = atob(code.slice(i + 4));
-    const p = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
-    const swap = { free_me: 'free_partner', free_partner: 'free_me', meet: 'meet' };
+    let bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    if (code[i + 3] === 'Z') bytes = await pipe(bytes, new DecompressionStream('deflate-raw'));
+    const p = JSON.parse(new TextDecoder().decode(bytes));
     const deleted = new Set([...(state.deleted || []), ...(p.deleted || [])]);
     const merge = (mine, theirs, map) => {
       const byId = new Map(mine.map(x => [x.id, x]));
@@ -579,21 +915,21 @@
         if (!cur || (y.updatedAt || 0) > (cur.updatedAt || 0)) byId.set(y.id, y); });
       return [...byId.values()].filter(x => !deleted.has(x.id));
     };
-    state.events = merge(state.events, p.events || [], x => Object.assign({}, x, { type: swap[x.type] || x.type }));
-    state.anniversaries = merge(state.anniversaries, p.anniversaries || []);
+    Object.keys(COLLECTIONS).forEach(k => state[k] = merge(state[k] || [], p[k] || [], COLLECTIONS[k]));
     state.deleted = [...deleted];
     if (!state.startDate && p.startDate) state.startDate = p.startDate;
     if (!state.meName && p.partnerName) state.meName = p.partnerName;
     if (!state.partnerName && p.meName) state.partnerName = p.meName;
   }
 
-  $('sendCode').onclick = () => shareText('💞 Код для нашего календаря — открой приложение, вкладка «Мы» → «Код от партнёра»:\n\n' + exportCode());
+  $('sendCode').onclick = async () => shareText('💞 Код для нашего приложения — открой его, вкладка «Мы» → «Код от партнёра»:\n\n' + await exportCode());
   $('copyCode').onclick = async () => {
-    try { await navigator.clipboard.writeText(exportCode()); toast('Код скопирован'); }
-    catch (e) { $('importCode').value = exportCode(); $('importCode').select(); toast('Скопируй код из поля ниже'); }
+    const code = await exportCode();
+    try { await navigator.clipboard.writeText(code); toast('Код скопирован'); }
+    catch (e) { $('importCode').value = code; $('importCode').select(); toast('Скопируй код из поля ниже'); }
   };
-  $('doImport').onclick = () => {
-    try { importCode($('importCode').value); save(); renderAll(); $('importCode').value = ''; haptic(); toast('Календари объединены 💞'); }
+  $('doImport').onclick = async () => {
+    try { await importCode($('importCode').value); save(); renderAll(); $('importCode').value = ''; haptic(); toast('Данные объединены 💞'); }
     catch (e) { haptic('error'); toast('Не получилось прочитать код'); }
   };
 
@@ -631,10 +967,39 @@
     renderCalendar(); };
   $('addForDay').onclick = () => eventForm(selected);
   $('addAnn').onclick = () => annForm();
+  $('addWish').onclick = () => wishForm();
+  $('wishSeg').onclick = e => { const b = e.target.closest('[data-owner]'); if (b) { wishOwner = b.dataset.owner; renderWishes(); } };
+  $('shareWishes').onclick = () => {
+    const list = state.wishes.filter(w => w.owner === 'me' && !w.gifted);
+    if (!list.length) return toast('Список пока пуст');
+    shareText('🎁 Мои хотелки:\n\n' + list.map((w, i) => (i + 1) + '. ' + w.title + (w.price ? ' — ' + w.price : '') +
+      (w.url ? '\n' + normUrl(w.url) : '')).join('\n\n'));
+  };
+  $('randomIdea').onclick = randomIdeaSheet;
+  $('addDream').onclick = dreamForm;
+  $('addMemory').onclick = () => memoryForm();
+  $('sendCompliment').onclick = () => shareText(pickOne(COMPLIMENTS));
+  $('writeNote').onclick = noteForm;
 
   document.body.addEventListener('click', e => {
     const ext = e.target.closest('[data-ext]');
     if (ext) { e.preventDefault(); e.stopPropagation(); if (tg && tg.openLink) tg.openLink(ext.href); else window.open(ext.href, '_blank'); return; }
+    const byId = (coll, id) => state[coll].find(x => x.id === id);
+    const res = e.target.closest('[data-reserve]');
+    if (res) { const w = byId('wishes', res.dataset.reserve); w.reservedBy = w.reservedBy === 'me' ? '' : 'me'; w.updatedAt = Date.now();
+      save(); renderWishes(); haptic(); return; }
+    const gf = e.target.closest('[data-gifted]');
+    if (gf) { const w = byId('wishes', gf.dataset.gifted); w.gifted = true; w.updatedAt = Date.now();
+      save(); renderWishes(); haptic(); toast('Ура, подарено! 🎉'); return; }
+    const tgl = e.target.closest('[data-toggle]');
+    if (tgl) { const i = byId('ideas', tgl.dataset.toggle); i.done = !i.done; i.updatedAt = Date.now();
+      save(); renderTogether(); haptic(); if (i.done) toast('Мечта сбылась! 🌟'); return; }
+    const ws = e.target.closest('[data-wish]');
+    if (ws) return wishForm(byId('wishes', ws.dataset.wish));
+    const idea = e.target.closest('[data-idea]') || e.target.closest('[data-dream]');
+    if (idea) return ideaSheet(byId('ideas', idea.dataset.idea || idea.dataset.dream));
+    const mem = e.target.closest('[data-memory]');
+    if (mem) return memoryForm(byId('memories', mem.dataset.memory));
     const ed = e.target.closest('[data-edit]');
     if (ed) return eventForm(null, state.events.find(x => x.id === ed.dataset.edit));
     const pl = e.target.closest('[data-plan]');
@@ -650,7 +1015,7 @@
   };
 
   function switchTab(name) {
-    ['calendar', 'dates', 'us'].forEach(t => $('tab-' + t).hidden = t !== name);
+    ['calendar', 'dates', 'wishes', 'together', 'us'].forEach(t => $('tab-' + t).hidden = t !== name);
     document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
     window.scrollTo(0, 0);
   }
